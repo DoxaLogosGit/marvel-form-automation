@@ -105,6 +105,22 @@ bun test
 
 This processes the `sample_play_data.json` file with a date filter to ensure everything works correctly.
 
+### Dry-Run Mode (Testing Without Submission)
+
+Use dry-run mode to test form filling without actually submitting data:
+
+```bash
+bun start your_play_data.json --dry-run
+```
+
+In dry-run mode, the tool will:
+- Navigate through all form pages
+- Fill out all fields with your data
+- Display success messages
+- **Skip the final submit button**
+
+This is perfect for testing data accuracy before committing to real submissions.
+
 ### Process All Plays (Parallel Mode - Default)
 
 By default, the tool uses parallel processing with up to 8 workers for maximum speed:
@@ -136,6 +152,7 @@ bun src/index.ts <json-path> [start-date] [options]
 **Options:**
 - `--sequential` or `-s`: Use sequential processing instead of parallel (useful for debugging)
 - `--workers N` or `-w N`: Set number of parallel workers (default: 8, max: 8)
+- `--dry-run` or `-d`: Fill forms but skip submission (for testing)
 
 **Examples:**
 
@@ -151,6 +168,12 @@ bun start marvel_play_data.json 2025-06-01 --sequential
 
 # Use 4 workers instead of 8
 bun start marvel_play_data.json 2025-06-01 --workers 4
+
+# Test form filling without submission (dry-run mode)
+bun start marvel_play_data.json 2025-06-01 --dry-run
+
+# Combine options: sequential mode with dry-run
+bun start marvel_play_data.json 2025-06-01 --sequential --dry-run
 
 # Test with sample data using sequential mode
 bun run test:sequential

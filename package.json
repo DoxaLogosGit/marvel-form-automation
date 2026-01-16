@@ -1,6 +1,6 @@
 {
   "name": "marvel-form-automation",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Automated TypeScript/Playwright tool for submitting Marvel Champions play data to the community statistics Google Form with parallel processing support",
   "main": "src/index.ts",
   "type": "module",

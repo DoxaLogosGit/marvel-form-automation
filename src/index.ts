@@ -11,6 +11,7 @@ async function main() {
   let startDate: string | undefined;
   let maxWorkers = 8;
   let useParallel = true;
+  let dryRun = false;
 
   // Simple argument parsing
   for (let i = 0; i < args.length; i++) {
@@ -23,6 +24,8 @@ async function main() {
         console.error('Error: Invalid number of workers');
         process.exit(1);
       }
+    } else if (arg === '--dry-run' || arg === '-d') {
+      dryRun = true;
     } else if (i === 0 && !arg.startsWith('-')) {
       jsonPath = arg;
     } else if (i === 1 && !arg.startsWith('-')) {
@@ -38,7 +41,8 @@ async function main() {
   console.log('               If not specified, all plays will be processed');
   console.log('\nOptions:');
   console.log('  --sequential, -s    : Process plays sequentially (default: parallel)');
-  console.log('  --workers N, -w N   : Number of parallel workers (default: 8, max: 8)\n');
+  console.log('  --workers N, -w N   : Number of parallel workers (default: 8, max: 8)');
+  console.log('  --dry-run, -d       : Fill forms but skip submission (for testing)\n');
 
   // Validate required arguments
   if (!jsonPath) {
@@ -49,10 +53,10 @@ async function main() {
   try {
     if (useParallel) {
       console.log(`Mode: Parallel processing with up to ${maxWorkers} workers\n`);
-      await processPlaysInParallel(jsonPath, startDate, maxWorkers);
+      await processPlaysInParallel(jsonPath, startDate, maxWorkers, dryRun);
     } else {
       console.log('Mode: Sequential processing\n');
-      await processPlaysSequentially(jsonPath, startDate);
+      await processPlaysSequentially(jsonPath, startDate, dryRun);
     }
   } catch (error) {
     console.error('Fatal error:', error);

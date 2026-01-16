@@ -72,7 +72,7 @@ export function filterPlays(allPlays: PlayData[], startDate?: string) {
 /**
  * Process plays in parallel using multiple browser instances
  */
-export async function processPlaysInParallel(jsonPath: string, startDate?: string, maxWorkers: number = 8) {
+export async function processPlaysInParallel(jsonPath: string, startDate?: string, maxWorkers: number = 8, dryRun: boolean = false) {
   // Read the JSON file
   const jsonData = fs.readFileSync(jsonPath, 'utf-8');
   const allPlays: PlayData[] = JSON.parse(jsonData);
@@ -99,7 +99,12 @@ export async function processPlaysInParallel(jsonPath: string, startDate?: strin
 
   // Determine optimal number of workers
   const numWorkers = Math.min(maxWorkers, playsToProcess.length);
-  console.log(`Using ${numWorkers} parallel workers\n`);
+  console.log(`Using ${numWorkers} parallel workers`);
+  if (dryRun) {
+    console.log(`⚠️  DRY RUN MODE: Forms will be filled but NOT submitted\n`);
+  } else {
+    console.log();
+  }
 
   if (numWorkers === 0) {
     console.log('No plays to process.');
@@ -113,7 +118,7 @@ export async function processPlaysInParallel(jsonPath: string, startDate?: strin
   const workers: FormSubmitter[] = [];
   console.log('Initializing workers...');
   for (let i = 0; i < numWorkers; i++) {
-    const worker = new FormSubmitter(i + 1);
+    const worker = new FormSubmitter(i + 1, dryRun);
     await worker.initialize();
     workers.push(worker);
     console.log(`  Worker ${i + 1} initialized`);
@@ -150,7 +155,7 @@ export async function processPlaysInParallel(jsonPath: string, startDate?: strin
 /**
  * Process plays sequentially using a single browser instance
  */
-export async function processPlaysSequentially(jsonPath: string, startDate?: string) {
+export async function processPlaysSequentially(jsonPath: string, startDate?: string, dryRun: boolean = false) {
   // Read the JSON file
   const jsonData = fs.readFileSync(jsonPath, 'utf-8');
   const allPlays: PlayData[] = JSON.parse(jsonData);
@@ -173,9 +178,14 @@ export async function processPlaysSequentially(jsonPath: string, startDate?: str
     console.log(`Start date filter: ${startDate}`);
     console.log(`Skipped (before start date): ${stats.skippedBeforeDate}`);
   }
-  console.log(`Plays to process: ${playsToProcess.length}\n`);
+  console.log(`Plays to process: ${playsToProcess.length}`);
+  if (dryRun) {
+    console.log(`⚠️  DRY RUN MODE: Forms will be filled but NOT submitted\n`);
+  } else {
+    console.log();
+  }
 
-  const submitter = new FormSubmitter(1);
+  const submitter = new FormSubmitter(1, dryRun);
 
   let successCount = 0;
   let failureCount = 0;

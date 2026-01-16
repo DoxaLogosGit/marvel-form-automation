@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-01-15
+
+### Added
+- **Dry-run mode** for testing form filling without submission
+- New `--dry-run` / `-d` command-line flag
+- Warning message displayed when in dry-run mode: "⚠️  DRY RUN MODE: Forms will be filled but NOT submitted"
+- Dry-run mode works with both parallel and sequential processing
+- Documentation section explaining dry-run usage and benefits
+
+### Changed
+- FormSubmitter class constructor now accepts optional `dryRun` parameter
+- `submitPlay` method skips form submission when `dryRun` is true
+- Both `processPlaysInParallel` and `processPlaysSequentially` support dry-run parameter
+
+### Technical
+- No form submissions occur when `--dry-run` flag is used
+- Useful for testing data accuracy before actual submissions
+- Prevents invalid or duplicate data during testing phase
+
 ## [2.1.0] - 2026-01-15
 
 ### Changed

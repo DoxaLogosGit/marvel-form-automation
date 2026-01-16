@@ -16,9 +16,11 @@ export class FormSubmitter {
   private browser: Browser | null = null;
   private page: Page | null = null;
   private workerId: number;
+  private dryRun: boolean;
 
-  constructor(workerId: number = 0) {
+  constructor(workerId: number = 0, dryRun: boolean = false) {
     this.workerId = workerId;
+    this.dryRun = dryRun;
   }
 
   async initialize() {
@@ -364,10 +366,14 @@ export class FormSubmitter {
 
       console.log(`${this.getWorkerPrefix()}   Form filled successfully!`);
 
-      // Submit the form
-      await this.page.getByRole('button', { name: 'Submit' }).click();
-      await this.waitForPageReady();
-      console.log(`${this.getWorkerPrefix()}   ✓ Form submitted successfully!`);
+      // Submit the form (unless in dry-run mode)
+      if (this.dryRun) {
+        console.log(`${this.getWorkerPrefix()}   [DRY RUN] Skipping form submission`);
+      } else {
+        await this.page.getByRole('button', { name: 'Submit' }).click();
+        await this.waitForPageReady();
+        console.log(`${this.getWorkerPrefix()}   ✓ Form submitted successfully!`);
+      }
 
       return true;
 
