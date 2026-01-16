@@ -8,6 +8,7 @@ This tool automates the submission of play data to help contribute to community 
 
 ## Features
 
+- ✅ **Parallel processing with up to 8 workers** for fast bulk submissions
 - ✅ Automatically fills out the 5-page Google Form with play data
 - ✅ Supports modular encounter set selection
 - ✅ Filters out plays with empty modular sets (special scenarios)
@@ -15,6 +16,7 @@ This tool automates the submission of play data to help contribute to community 
 - ✅ Difficulty parsing (S1E1, S2E2, Heroic, etc.)
 - ✅ Handles solo and multiplayer games
 - ✅ Special support for Spider-Woman dual aspects
+- ✅ Sequential mode available for debugging
 - ✅ Submit button **commented out by default** for safety
 
 ## Prerequisites
@@ -104,9 +106,9 @@ npm test
 
 This processes the `sample_play_data.json` file with a date filter to ensure everything works correctly.
 
-### Process All Plays
+### Process All Plays (Parallel Mode - Default)
 
-Process all plays from your JSON file:
+By default, the tool uses parallel processing with up to 8 workers for maximum speed:
 
 ```bash
 npm start your_play_data.json
@@ -125,24 +127,37 @@ This is useful for incremental updates - only submitting new plays since your la
 ### Command Line Arguments
 
 ```bash
-node dist/submit-forms.js [json-path] [start-date]
+node dist/submit-forms.js <json-path> [start-date] [options]
 ```
 
 **Parameters:**
-- `json-path`: Path to your JSON file containing play data
+- `json-path` (required): Path to your JSON file containing play data
 - `start-date` (optional): Only process plays on or after this date in `YYYY-MM-DD` format
+
+**Options:**
+- `--sequential` or `-s`: Use sequential processing instead of parallel (useful for debugging)
+- `--workers N` or `-w N`: Set number of parallel workers (default: 8, max: 8)
 
 **Examples:**
 
 ```bash
-# Process all plays in file
-npm start ../my_plays.json
+# Process all plays with 8 workers (default parallel mode)
+npm start marvel_play_data.json
 
-# Process only plays from 2026 onwards
-npm start ../my_plays.json 2026-01-01
+# Process plays from 2025 onwards with parallel processing
+npm start marvel_play_data.json 2025-06-01
 
-# Process plays from June 2025 onwards
-npm start ../my_plays.json 2025-06-01
+# Use sequential mode for debugging
+npm start marvel_play_data.json 2025-06-01 --sequential
+
+# Use 4 workers instead of 8
+npm start marvel_play_data.json 2025-06-01 --workers 4
+
+# Test with sample data using sequential mode
+npm run test:sequential
+
+# Test with sample data using 4 workers
+npm run test:workers
 ```
 
 ## Filtering Logic
@@ -166,6 +181,49 @@ Start date filter: 2026-01-01
 Skipped (before start date): 950
 Plays to process: 174
 ```
+
+## Performance and Parallel Processing
+
+### How Parallel Processing Works
+
+The tool uses multiple browser instances running simultaneously to process plays in parallel:
+
+1. **Data Splitting**: Your plays are divided into equal chunks (one per worker)
+2. **Worker Initialization**: Each worker launches its own browser instance
+3. **Parallel Execution**: All workers process their chunks simultaneously
+4. **Result Aggregation**: Results are combined and reported at the end
+
+Each worker is completely independent, with its own browser instance and processing queue. Workers are labeled `[Worker 1]`, `[Worker 2]`, etc. in the console output for easy tracking.
+
+### Performance Benefits
+
+Parallel processing dramatically reduces total processing time:
+
+| Plays | Sequential | 4 Workers | 8 Workers |
+|-------|------------|-----------|-----------|
+| 40    | ~7 min     | ~2 min    | ~1 min    |
+| 100   | ~17 min    | ~5 min    | ~2.5 min  |
+| 200   | ~33 min    | ~9 min    | ~5 min    |
+| 500   | ~83 min    | ~21 min   | ~11 min   |
+
+*Assumes ~10 seconds per play. Actual times may vary based on network speed and form complexity.*
+
+### When to Use Sequential Mode
+
+Use sequential mode (`--sequential`) when:
+- **Debugging**: Easier to follow console output with one worker
+- **Rate Limiting Concerns**: If you encounter rate limiting from Google Forms
+- **Low Play Count**: < 10 plays don't benefit much from parallelization
+- **Testing**: When verifying form fill accuracy before actual submission
+
+### Resource Usage
+
+Each worker runs a separate Chromium browser instance:
+- **Memory**: ~150-200 MB per worker
+- **CPU**: Scales linearly with worker count
+- **Network**: Each worker makes independent form requests
+
+For 8 workers, expect ~1.2-1.6 GB of RAM usage. Reduce worker count with `--workers` if you have memory constraints.
 
 ## Enabling Form Submission
 
@@ -263,7 +321,24 @@ Compiles TypeScript to JavaScript in the `dist/` directory.
 ### Run Directly
 
 ```bash
+# Parallel with 8 workers (default)
 node dist/submit-forms.js path/to/data.json
+
+# Sequential mode
+node dist/submit-forms.js path/to/data.json 2025-06-01 --sequential
+
+# Custom worker count
+node dist/submit-forms.js path/to/data.json 2025-06-01 --workers 4
+```
+
+### Available NPM Scripts
+
+```bash
+npm run build              # Compile TypeScript to JavaScript
+npm run dev                # Build and run with default settings
+npm test                   # Test with sample data (parallel, 8 workers)
+npm run test:sequential    # Test with sample data (sequential mode)
+npm run test:workers       # Test with sample data (4 workers)
 ```
 
 ### Watch Mode (for development)

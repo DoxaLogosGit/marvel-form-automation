@@ -1,6 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
 import * as fs from 'fs';
-import * as path from 'path';
 
 // Types for our play data
 interface HeroPlay {
@@ -96,9 +95,36 @@ const SCENARIOS_WITHOUT_MODULAR_PAGE = new Set([
   'Wrecking Crew',
 ]);
 
+/**
+ * Split an array into roughly equal chunks for parallel processing
+ */
+function chunkArray<T>(array: T[], numChunks: number): T[][] {
+  if (numChunks <= 0) {
+    throw new Error('Number of chunks must be positive');
+  }
+  if (numChunks >= array.length) {
+    // If we have more workers than items, give each item its own chunk
+    return array.map(item => [item]);
+  }
+
+  const chunks: T[][] = [];
+  const chunkSize = Math.ceil(array.length / numChunks);
+
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+
+  return chunks;
+}
+
 class FormSubmitter {
   private browser: Browser | null = null;
   private page: Page | null = null;
+  private workerId: number;
+
+  constructor(workerId: number = 0) {
+    this.workerId = workerId;
+  }
 
   async initialize() {
     this.browser = await chromium.launch({
@@ -107,6 +133,13 @@ class FormSubmitter {
     this.page = await this.browser.newPage();
     // Set default timeout
     this.page.setDefaultTimeout(DEFAULT_TIMEOUT);
+  }
+
+  /**
+   * Get a formatted worker prefix for logging
+   */
+  private getWorkerPrefix(): string {
+    return `[Worker ${this.workerId}]`;
   }
 
   async close() {
@@ -236,7 +269,7 @@ class FormSubmitter {
     }
 
     try {
-      console.log(`\nSubmitting play ${play.Id} - ${play.Date} - ${play.Villain}`);
+      console.log(`${this.getWorkerPrefix()} Submitting play ${play.Id} - ${play.Date} - ${play.Villain}`);
 
       // Navigate to form with retry logic
       try {
@@ -474,7 +507,7 @@ class FormSubmitter {
         // Note: Skirmish mode not implemented as it's not in the current data format
       }
 
-      console.log('  Form filled successfully!');
+      console.log(`${this.getWorkerPrefix()}   Form filled successfully!`);
 
       // ====================================================================
       // SUBMIT BUTTON - COMMENTED OUT FOR SAFETY
@@ -490,9 +523,61 @@ class FormSubmitter {
       return true;
 
     } catch (error) {
-      console.error(`Error submitting play ${play.Id}:`, error instanceof Error ? error.message : error);
+      console.error(`${this.getWorkerPrefix()} Error submitting play ${play.Id}:`, error instanceof Error ? error.message : error);
       return false;
     }
+  }
+
+  /**
+   * Process a chunk of plays (used for parallel processing)
+   * @param plays Array of plays to process
+   * @param chunkIndex Index of this chunk (for logging)
+   * @param totalChunks Total number of chunks (for logging)
+   */
+  async processPlaysChunk(plays: PlayData[], chunkIndex: number, totalChunks: number): Promise<{ success: number; failed: number }> {
+    console.log(`${this.getWorkerPrefix()} Starting to process ${plays.length} plays (chunk ${chunkIndex + 1}/${totalChunks})`);
+
+    let successCount = 0;
+    let failureCount = 0;
+    let consecutiveFailures = 0;
+    const MAX_CONSECUTIVE_FAILURES = 3;
+
+    for (const play of plays) {
+      // Check if we've had too many consecutive failures (likely browser/connection issue)
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        console.error(`${this.getWorkerPrefix()} Too many consecutive failures (${consecutiveFailures}). Attempting browser recovery...`);
+        try {
+          // Try to recover by closing and reopening the page
+          if (this.page) {
+            await this.page.close().catch(() => {});
+          }
+          this.page = await this.browser!.newPage();
+          this.page.setDefaultTimeout(DEFAULT_TIMEOUT);
+          consecutiveFailures = 0;
+          console.log(`${this.getWorkerPrefix()} Browser recovered. Continuing...`);
+          await this.page.waitForTimeout(2000);
+        } catch (recoveryError) {
+          console.error(`${this.getWorkerPrefix()} Failed to recover browser. Stopping this worker.`);
+          break;
+        }
+      }
+
+      const success = await this.submitPlay(play);
+      if (success) {
+        successCount++;
+        consecutiveFailures = 0;
+        // Wait a bit between submissions to avoid rate limiting
+        await this.page!.waitForTimeout(2000);
+      } else {
+        failureCount++;
+        consecutiveFailures++;
+        // Wait longer after a failure
+        await this.page!.waitForTimeout(3000);
+      }
+    }
+
+    console.log(`${this.getWorkerPrefix()} Completed chunk ${chunkIndex + 1}/${totalChunks}: ${successCount} successful, ${failureCount} failed`);
+    return { success: successCount, failed: failureCount };
   }
 
   /**
@@ -617,28 +702,191 @@ class FormSubmitter {
   }
 }
 
+/**
+ * Process plays in parallel using multiple browser instances
+ * @param jsonPath Path to the JSON file
+ * @param startDate Optional start date (YYYY-MM-DD). Only plays on or after this date will be processed.
+ * @param maxWorkers Maximum number of parallel workers (default: 8)
+ */
+async function processPlaysInParallel(jsonPath: string, startDate?: string, maxWorkers: number = 8) {
+  // Read the JSON file
+  const jsonData = fs.readFileSync(jsonPath, 'utf-8');
+  const allPlays: PlayData[] = JSON.parse(jsonData);
+
+  console.log(`Loaded ${allPlays.length} plays from ${jsonPath}`);
+
+  // Filter plays
+  let filteredPlays = allPlays;
+  let skippedEmptyModular = 0;
+  let skippedBeforeDate = 0;
+  let skippedBasicAspect = 0;
+
+  // Filter out plays with "Basic" aspect (no aspect - form requires an aspect selection)
+  const playsWithAspect = filteredPlays.filter(play => {
+    if (play.Heroes && play.Heroes.some((h: { Aspect: string }) => h.Aspect === 'Basic')) {
+      skippedBasicAspect++;
+      return false;
+    }
+    return true;
+  });
+  filteredPlays = playsWithAspect;
+
+  // Filter out plays with empty modular sets (unless it's a scenario that doesn't use modulars)
+  const playsWithModular = filteredPlays.filter(play => {
+    // Scenarios like Wrecking Crew don't use modular sets, so don't filter them out
+    if (SCENARIOS_WITHOUT_MODULAR_PAGE.has(play.Villain)) {
+      return true;
+    }
+    if (!play.Modular_Sets || play.Modular_Sets.length === 0) {
+      skippedEmptyModular++;
+      return false;
+    }
+    return true;
+  });
+  filteredPlays = playsWithModular;
+
+  // Filter by start date if provided
+  if (startDate) {
+    const startDateObj = new Date(startDate);
+    const playsAfterDate = filteredPlays.filter(play => {
+      const playDate = new Date(play.Date);
+      if (playDate < startDateObj) {
+        skippedBeforeDate++;
+        return false;
+      }
+      return true;
+    });
+    filteredPlays = playsAfterDate;
+  }
+
+  // Sort plays by date (oldest first) so we process chronologically
+  const playsToProcess = filteredPlays.sort((a, b) => {
+    return new Date(a.Date).getTime() - new Date(b.Date).getTime();
+  });
+
+  // Print filtering summary
+  console.log(`\n=== Filtering Summary ===`);
+  console.log(`Total plays in file: ${allPlays.length}`);
+  if (skippedBasicAspect > 0) {
+    console.log(`Skipped (Basic/no aspect): ${skippedBasicAspect}`);
+  }
+  if (skippedEmptyModular > 0) {
+    console.log(`Skipped (empty modular sets): ${skippedEmptyModular}`);
+  }
+  if (startDate) {
+    console.log(`Start date filter: ${startDate}`);
+    console.log(`Skipped (before start date): ${skippedBeforeDate}`);
+  }
+  console.log(`Plays to process: ${playsToProcess.length}`);
+
+  // Determine optimal number of workers
+  const numWorkers = Math.min(maxWorkers, playsToProcess.length);
+  console.log(`Using ${numWorkers} parallel workers\n`);
+
+  if (numWorkers === 0) {
+    console.log('No plays to process.');
+    return;
+  }
+
+  // Split plays into chunks for parallel processing
+  const chunks = chunkArray(playsToProcess, numWorkers);
+
+  // Create workers and initialize them
+  const workers: FormSubmitter[] = [];
+  console.log('Initializing workers...');
+  for (let i = 0; i < numWorkers; i++) {
+    const worker = new FormSubmitter(i + 1);
+    await worker.initialize();
+    workers.push(worker);
+    console.log(`  Worker ${i + 1} initialized`);
+  }
+
+  console.log('\nStarting parallel processing...\n');
+
+  // Process all chunks in parallel
+  const startTime = Date.now();
+  const results = await Promise.all(
+    chunks.map((chunk, index) =>
+      workers[index].processPlaysChunk(chunk, index, numWorkers)
+    )
+  );
+
+  // Close all workers
+  console.log('\nClosing workers...');
+  await Promise.all(workers.map(worker => worker.close()));
+
+  // Aggregate results
+  const totalSuccess = results.reduce((sum, r) => sum + r.success, 0);
+  const totalFailed = results.reduce((sum, r) => sum + r.failed, 0);
+  const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  // Print final summary
+  console.log(`\n=== Final Summary ===`);
+  console.log(`Total plays processed: ${playsToProcess.length}`);
+  console.log(`Successful: ${totalSuccess}`);
+  console.log(`Failed: ${totalFailed}`);
+  console.log(`Time elapsed: ${elapsedTime} seconds`);
+  console.log(`Average time per play: ${(parseFloat(elapsedTime) / playsToProcess.length).toFixed(2)} seconds`);
+}
+
 // Main function
 async function main() {
   const args = process.argv.slice(2);
-  const jsonPath = args[0] || path.join(__dirname, '../../marvel_play_data.json');
-  const startDate = args[1]; // Optional start date in YYYY-MM-DD format
+
+  // Parse command line arguments
+  let jsonPath: string | undefined;
+  let startDate: string | undefined;
+  let maxWorkers = 8;
+  let useParallel = true;
+
+  // Simple argument parsing
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--sequential' || arg === '-s') {
+      useParallel = false;
+    } else if (arg === '--workers' || arg === '-w') {
+      maxWorkers = parseInt(args[++i], 10);
+      if (isNaN(maxWorkers) || maxWorkers < 1) {
+        console.error('Error: Invalid number of workers');
+        process.exit(1);
+      }
+    } else if (i === 0 && !arg.startsWith('-')) {
+      jsonPath = arg;
+    } else if (i === 1 && !arg.startsWith('-')) {
+      startDate = arg;
+    }
+  }
 
   console.log('Marvel Champions Form Automation');
   console.log('=================================\n');
-  console.log('Usage: npm start [json-path] [start-date]');
-  console.log('  json-path  : Path to JSON file (default: ../marvel_play_data.json)');
+  console.log('Usage: npm start <json-path> [start-date] [options]');
+  console.log('  json-path  : Path to JSON file (required)');
   console.log('  start-date : Only process plays on or after this date (YYYY-MM-DD format)');
-  console.log('               If not specified, all plays will be processed\n');
+  console.log('               If not specified, all plays will be processed');
+  console.log('\nOptions:');
+  console.log('  --sequential, -s    : Process plays sequentially (default: parallel)');
+  console.log('  --workers N, -w N   : Number of parallel workers (default: 8, max: 8)\n');
 
-  const submitter = new FormSubmitter();
+  // Validate required arguments
+  if (!jsonPath) {
+    console.error('Error: json-path is required');
+    process.exit(1);
+  }
 
   try {
-    await submitter.initialize();
-    await submitter.processPlays(jsonPath, startDate);
+    if (useParallel) {
+      console.log(`Mode: Parallel processing with up to ${maxWorkers} workers\n`);
+      await processPlaysInParallel(jsonPath, startDate, maxWorkers);
+    } else {
+      console.log('Mode: Sequential processing\n');
+      const submitter = new FormSubmitter(1);
+      await submitter.initialize();
+      await submitter.processPlays(jsonPath, startDate);
+      await submitter.close();
+    }
   } catch (error) {
     console.error('Fatal error:', error);
-  } finally {
-    await submitter.close();
+    process.exit(1);
   }
 }
 

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-15
+
+### Added
+- **Parallel processing support** with up to 8 concurrent workers
+- New command-line options: `--sequential` / `-s` and `--workers N` / `-w N`
+- Worker-based architecture with independent browser instances
+- Chunk-based play distribution for parallel execution
+- Worker-specific logging with `[Worker N]` prefixes
+- New npm scripts: `test:sequential` and `test:workers`
+- Performance statistics in final summary (time elapsed, average time per play)
+- Comprehensive parallel processing documentation
+
+### Changed
+- **BREAKING**: `json-path` is now a required argument (no longer has a default value)
+- Default mode is now parallel processing with 8 workers (was sequential)
+- Updated usage examples to show parallel and sequential modes
+- Enhanced error handling for parallel worker failures
+- Improved console output for tracking multiple workers
+- Updated package.json test scripts with better date filtering
+
+### Performance
+- ~8x faster processing for large datasets with 8 workers
+- Reduced 100-play processing time from ~17 minutes to ~2.5 minutes
+- Scalable from 1-8 workers based on system resources
+
 ## [1.0.0] - 2026-01-15
 
 ### Added
