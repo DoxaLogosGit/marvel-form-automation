@@ -1,0 +1,42 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test artifacts
+screenshots/
+videos/
+test-results/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+
+# User data (don't commit actual play data)
+*_play_data.json
+!sample_play_data.json

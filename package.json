@@ -1,0 +1,23 @@
+{
+  "name": "marvel-form-automation",
+  "version": "1.0.0",
+  "description": "Automated TypeScript/Playwright tool for submitting Marvel Champions play data to the community statistics Google Form",
+  "main": "dist/submit-forms.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/submit-forms.js",
+    "dev": "tsc && node dist/submit-forms.js",
+    "test": "npm run build && node dist/submit-forms.js sample_play_data.json 2026-01-01"
+  },
+  "keywords": ["marvel-champions", "board-game", "automation", "playwright", "form-automation"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "Id": "100000001",
+    "Date": "2026-01-10",
+    "Villain": "Rhino",
+    "Difficulty": "S1E1",
+    "Multiplayer": false,
+    "True_Solo": true,
+    "Heroes": [
+      {
+        "Hero": "Spider-Man",
+        "Aspect": "Justice",
+        "Win": 1
+      }
+    ],
+    "Modular_Sets": [
+      "Bomb Scare"
+    ]
+  },
+  {
+    "Id": "100000002",
+    "Date": "2026-01-11",
+    "Villain": "Klaw",
+    "Difficulty": "S1E2",
+    "Multiplayer": false,
+    "True_Solo": true,
+    "Heroes": [
+      {
+        "Hero": "Captain America",
+        "Aspect": "Leadership",
+        "Win": 1
+      }
+    ],
+    "Modular_Sets": [
+      "Masters of Evil"
+    ]
+  },
+  {
+    "Id": "100000003",
+    "Date": "2026-01-12",
+    "Villain": "Ultron",
+    "Difficulty": "S2E1",
+    "Multiplayer": false,
+    "True_Solo": true,
+    "Heroes": [
+      {
+        "Hero": "Iron Man",
+        "Aspect": "Aggression",
+        "Win": 0
+      }
+    ],
+    "Modular_Sets": [
+      "Legions of Hydra",
+      "The Doomsday Chair"
+    ]
+  },
+  {
+    "Id": "100000004",
+    "Date": "2026-01-13",
+    "Villain": "Mutagen Formula",
+    "Difficulty": "S1E1",
+    "Multiplayer": true,
+    "True_Solo": false,
+    "Heroes": [
+      {
+        "Hero": "Spider-Woman",
+        "Aspect": "Justice & Aggression",
+        "Win": 1
+      },
+      {
+        "Hero": "Ms. Marvel",
+        "Aspect": "Protection",
+        "Win": 1
+      }
+    ],
+    "Modular_Sets": [
+      "Goblin Gear",
+      "A Mess of Things"
+    ]
+  },
+  {
+    "Id": "100000005",
+    "Date": "2026-01-14",
+    "Villain": "Thanos",
+    "Difficulty": "Heroic",
+    "Multiplayer": false,
+    "True_Solo": true,
+    "Heroes": [
+      {
+        "Hero": "Doctor Strange",
+        "Aspect": "Protection",
+        "Win": 0
+      }
+    ],
+    "Modular_Sets": [
+      "Legions of Hydra",
+      "The Infinity Gauntlet"
+    ]
+  }
+]
