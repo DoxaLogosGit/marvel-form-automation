@@ -509,16 +509,10 @@ class FormSubmitter {
 
       console.log(`${this.getWorkerPrefix()}   Form filled successfully!`);
 
-      // ====================================================================
-      // SUBMIT BUTTON - COMMENTED OUT FOR SAFETY
-      // ====================================================================
-      // Uncomment the lines below to actually submit the form.
-      // IMPORTANT: Review the form data in the browser before uncommenting!
-      // ====================================================================
-
-      // await this.page.getByRole('button', { name: 'Submit' }).click();
-      // await this.waitForPageReady();
-      // console.log('  ✓ Form submitted successfully!');
+      // Submit the form
+      await this.page.getByRole('button', { name: 'Submit' }).click();
+      await this.waitForPageReady();
+      console.log(`${this.getWorkerPrefix()}   ✓ Form submitted successfully!`);
 
       return true;
 
@@ -859,7 +853,7 @@ async function main() {
 
   console.log('Marvel Champions Form Automation');
   console.log('=================================\n');
-  console.log('Usage: npm start <json-path> [start-date] [options]');
+  console.log('Usage: bun start <json-path> [start-date] [options]');
   console.log('  json-path  : Path to JSON file (required)');
   console.log('  start-date : Only process plays on or after this date (YYYY-MM-DD format)');
   console.log('               If not specified, all plays will be processed');

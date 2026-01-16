@@ -17,14 +17,13 @@ This tool automates the submission of play data to help contribute to community 
 - ✅ Handles solo and multiplayer games
 - ✅ Special support for Spider-Woman dual aspects
 - ✅ Sequential mode available for debugging
-- ✅ Submit button **commented out by default** for safety
+- ✅ **Production ready** - actively submits forms to Google Forms
 
 ## Prerequisites
 
 ### System Requirements
 
-- Node.js (v16 or higher)
-- npm (comes with Node.js)
+- [Bun](https://bun.sh) (v1.0 or higher) - A fast all-in-one JavaScript runtime
 
 ### Installation
 
@@ -34,10 +33,10 @@ git clone <repository-url>
 cd marvel-form-automation
 
 # Install dependencies
-npm install
+bun install
 
 # Install Playwright browsers
-npx playwright install
+bun run install:browsers
 ```
 
 ## JSON Data Format
@@ -101,7 +100,7 @@ The tool supports these difficulty notations:
 Test with a small number of plays using the sample data:
 
 ```bash
-npm test
+bun test
 ```
 
 This processes the `sample_play_data.json` file with a date filter to ensure everything works correctly.
@@ -111,7 +110,7 @@ This processes the `sample_play_data.json` file with a date filter to ensure eve
 By default, the tool uses parallel processing with up to 8 workers for maximum speed:
 
 ```bash
-npm start your_play_data.json
+bun start your_play_data.json
 ```
 
 ### Process Plays After Specific Date
@@ -119,7 +118,7 @@ npm start your_play_data.json
 Only submit plays on or after a specific date:
 
 ```bash
-npm start your_play_data.json 2025-01-01
+bun start your_play_data.json 2025-01-01
 ```
 
 This is useful for incremental updates - only submitting new plays since your last submission.
@@ -127,7 +126,7 @@ This is useful for incremental updates - only submitting new plays since your la
 ### Command Line Arguments
 
 ```bash
-node dist/submit-forms.js <json-path> [start-date] [options]
+bun src/submit-forms.ts <json-path> [start-date] [options]
 ```
 
 **Parameters:**
@@ -142,22 +141,22 @@ node dist/submit-forms.js <json-path> [start-date] [options]
 
 ```bash
 # Process all plays with 8 workers (default parallel mode)
-npm start marvel_play_data.json
+bun start marvel_play_data.json
 
 # Process plays from 2025 onwards with parallel processing
-npm start marvel_play_data.json 2025-06-01
+bun start marvel_play_data.json 2025-06-01
 
 # Use sequential mode for debugging
-npm start marvel_play_data.json 2025-06-01 --sequential
+bun start marvel_play_data.json 2025-06-01 --sequential
 
 # Use 4 workers instead of 8
-npm start marvel_play_data.json 2025-06-01 --workers 4
+bun start marvel_play_data.json 2025-06-01 --workers 4
 
 # Test with sample data using sequential mode
-npm run test:sequential
+bun run test:sequential
 
 # Test with sample data using 4 workers
-npm run test:workers
+bun run test:workers
 ```
 
 ## Filtering Logic
@@ -225,15 +224,25 @@ Each worker runs a separate Chromium browser instance:
 
 For 8 workers, expect ~1.2-1.6 GB of RAM usage. Reduce worker count with `--workers` if you have memory constraints.
 
-## Enabling Form Submission
+## Before Running
 
-**IMPORTANT**: The submit button is **commented out by default** for safety.
+**IMPORTANT**: This tool actively submits forms to Google Forms. Please verify your data before running.
 
-### Before Enabling Submission
+### First Time Setup & Testing
 
-1. Run the script in test mode first
-2. Watch the browser window as it fills out the form
-3. Verify that:
+Before processing your full dataset:
+
+1. **Test with sample data first:**
+   ```bash
+   bun test
+   ```
+
+2. **Run in headful mode** (optional) to watch the browser:
+   - Edit `src/submit-forms.ts`
+   - Change `headless: true` to `headless: false` (around line 131)
+   - This lets you see the form being filled out in real-time
+
+3. **Verify form accuracy** by watching a few submissions:
    - Heroes are selected correctly
    - Aspects match your data
    - Villains/scenarios are correct
@@ -241,26 +250,12 @@ For 8 workers, expect ~1.2-1.6 GB of RAM usage. Reduce worker count with `--work
    - Difficulty settings are accurate
    - Win/loss is correct
 
-### To Enable Actual Submission
+4. **Start small** - Process a few plays first:
+   ```bash
+   bun start your_data.json 2025-12-01  # Only recent plays
+   ```
 
-Once you've verified everything looks correct:
-
-1. Open `src/submit-forms.ts` in your editor
-2. Find the submit section (around line 170)
-3. Uncomment these lines:
-
-```typescript
-// await this.page.click('text=Submit');
-// await this.page.waitForLoadState('networkidle');
-// console.log('  ✓ Form submitted successfully!');
-```
-
-4. Rebuild and run:
-
-```bash
-npm run build
-npm start your_play_data.json
-```
+5. **Scale up** once confident everything works correctly
 
 ## How It Works
 
@@ -310,44 +305,46 @@ The script includes mappings for common name variations. If a hero or villain is
 
 ## Development
 
-### Build Only
+### Why Bun?
 
-```bash
-npm run build
-```
-
-Compiles TypeScript to JavaScript in the `dist/` directory.
+This project uses [Bun](https://bun.sh) for several advantages:
+- **Runs TypeScript directly** - No build step required for development
+- **Faster execution** - Bun is significantly faster than Node.js
+- **Built-in TypeScript support** - No configuration needed
+- **Drop-in replacement** - Compatible with Node.js APIs and npm packages
 
 ### Run Directly
 
 ```bash
 # Parallel with 8 workers (default)
-node dist/submit-forms.js path/to/data.json
+bun src/submit-forms.ts path/to/data.json
 
 # Sequential mode
-node dist/submit-forms.js path/to/data.json 2025-06-01 --sequential
+bun src/submit-forms.ts path/to/data.json 2025-06-01 --sequential
 
 # Custom worker count
-node dist/submit-forms.js path/to/data.json 2025-06-01 --workers 4
+bun src/submit-forms.ts path/to/data.json 2025-06-01 --workers 4
 ```
 
-### Available NPM Scripts
+### Available Bun Scripts
 
 ```bash
-npm run build              # Compile TypeScript to JavaScript
-npm run dev                # Build and run with default settings
-npm test                   # Test with sample data (parallel, 8 workers)
-npm run test:sequential    # Test with sample data (sequential mode)
-npm run test:workers       # Test with sample data (4 workers)
+bun run build              # Build to dist/ directory (optional, for distribution)
+bun run dev                # Run TypeScript directly (same as start)
+bun test                   # Test with sample data (parallel, 8 workers)
+bun run test:sequential    # Test with sample data (sequential mode)
+bun run test:workers       # Test with sample data (4 workers)
+bun run install:browsers   # Install Playwright browsers
 ```
 
-### Watch Mode (for development)
+### Development Workflow
+
+No build step needed! Bun runs TypeScript directly:
 
 ```bash
-npm run dev
+# Edit src/submit-forms.ts, then run immediately
+bun src/submit-forms.ts your_data.json
 ```
-
-Automatically rebuilds on file changes.
 
 ## Project Structure
 
@@ -392,13 +389,15 @@ MIT License - feel free to use and modify as needed.
 ## Disclaimer
 
 This tool is for personal use to contribute to community statistics. Please:
+- **Test thoroughly** before processing your full dataset
 - Verify all data before submission
 - Don't submit duplicate or inaccurate data
 - Use responsibly and respect the form owner's guidelines
-- Keep the submit button commented out until you've thoroughly tested
+- Start with small batches to ensure accuracy
 
 ## Acknowledgments
 
 - Thanks to the Marvel Champions community for maintaining the statistics form
-- Built with [Playwright](https://playwright.dev/) for reliable browser automation
+- Built with [Bun](https://bun.sh) for blazing-fast TypeScript execution
+- Powered by [Playwright](https://playwright.dev/) for reliable browser automation
 - Part of the Marvel Champions data tracking ecosystem

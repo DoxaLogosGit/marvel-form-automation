@@ -1,15 +1,17 @@
 {
   "name": "marvel-form-automation",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Automated TypeScript/Playwright tool for submitting Marvel Champions play data to the community statistics Google Form with parallel processing support",
-  "main": "dist/submit-forms.js",
+  "main": "src/submit-forms.ts",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "npm run build && node dist/submit-forms.js",
-    "dev": "tsc && node dist/submit-forms.js",
-    "test": "npm run build && node dist/submit-forms.js sample_play_data.json 2025-06-01",
-    "test:sequential": "npm run build && node dist/submit-forms.js sample_play_data.json 2025-06-01 --sequential",
-    "test:workers": "npm run build && node dist/submit-forms.js sample_play_data.json 2025-06-01 --workers 4"
+    "build": "bun build src/submit-forms.ts --outdir dist --target node --external playwright",
+    "start": "bun src/submit-forms.ts",
+    "dev": "bun src/submit-forms.ts",
+    "test": "bun src/submit-forms.ts sample_play_data.json 2025-06-01",
+    "test:sequential": "bun src/submit-forms.ts sample_play_data.json 2025-06-01 --sequential",
+    "test:workers": "bun src/submit-forms.ts sample_play_data.json 2025-06-01 --workers 4",
+    "install:browsers": "bunx playwright install"
   },
   "keywords": ["marvel-champions", "board-game", "automation", "playwright", "form-automation"],
   "author": "",

@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-15
+
+### Changed
+- **BREAKING: Form submissions now active** - Tool now actually submits forms to Google Forms
+- Uncommented submit button in production code
+- Updated documentation to reflect production-ready status
+- Changed "Enabling Form Submission" section to "Before Running" with testing guidance
+- Enhanced disclaimer to emphasize thorough testing before full dataset processing
+
+### Added
+- Guidance for headful mode testing (watch browser in real-time)
+- Recommendation to start with small batches
+- Step-by-step first-time setup instructions
+
+### Removed
+- Safety warnings about commented submit button
+- Instructions for uncommenting code manually
+
+## [1.2.0] - 2026-01-15
+
+### Changed
+- **Migrated from Node.js to Bun** for faster execution and simpler development
+- Updated all package.json scripts to use `bun` instead of `npm`/`node`
+- Changed main entry point to TypeScript source file (Bun runs TS directly)
+- Updated all documentation to reference Bun instead of npm/Node.js
+- Updated usage messages in code to show `bun start` commands
+
+### Added
+- New `install:browsers` script for Playwright browser installation with Bun
+- "Why Bun?" section in README explaining benefits
+- Type module support in package.json
+
+### Technical
+- No build step required for development - Bun runs TypeScript natively
+- Faster startup time and improved performance
+- Simpler development workflow without transpilation step
+- Backward compatible with all Node.js APIs used
+
 ## [1.1.0] - 2026-01-15
 
 ### Added
