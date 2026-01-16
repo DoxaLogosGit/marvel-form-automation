@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-15
+
+### Changed
+- **Refactored codebase into modular architecture** for better maintainability
+- Split monolithic 896-line file into 6 focused modules:
+  - `types.ts` - Type definitions
+  - `constants.ts` - All constants and mappings
+  - `utils.ts` - Utility functions
+  - `form-submitter.ts` - FormSubmitter class
+  - `parallel-processor.ts` - Worker orchestration
+  - `index.ts` - Main entry point
+- Main entry point changed from `src/submit-forms.ts` to `src/index.ts`
+- Extracted `filterPlays()` function for reuse between parallel/sequential modes
+
+### Added
+- Clear separation of concerns with single-responsibility modules
+- Better code organization and discoverability
+- Easier testing of individual components
+- Improved maintainability for future enhancements
+
+### Technical
+- Each module is 150-400 lines (vs original 896-line monolith)
+- All modules use ES6 imports/exports
+- TypeScript type safety maintained across all modules
+- No functional changes - all features work identically
+
 ## [2.0.0] - 2026-01-15
 
 ### Changed

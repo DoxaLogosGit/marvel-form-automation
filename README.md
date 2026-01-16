@@ -126,7 +126,7 @@ This is useful for incremental updates - only submitting new plays since your la
 ### Command Line Arguments
 
 ```bash
-bun src/submit-forms.ts <json-path> [start-date] [options]
+bun src/index.ts <json-path> [start-date] [options]
 ```
 
 **Parameters:**
@@ -238,8 +238,8 @@ Before processing your full dataset:
    ```
 
 2. **Run in headful mode** (optional) to watch the browser:
-   - Edit `src/submit-forms.ts`
-   - Change `headless: true` to `headless: false` (around line 131)
+   - Edit `src/form-submitter.ts`
+   - Change `headless: true` to `headless: false` (around line 23)
    - This lets you see the form being filled out in real-time
 
 3. **Verify form accuracy** by watching a few submissions:
@@ -299,8 +299,8 @@ If all plays are being skipped:
 ### Hero/Villain Name Mismatches
 
 The script includes mappings for common name variations. If a hero or villain isn't found:
-- Check the `HERO_NAME_MAPPINGS` in `src/submit-forms.ts`
-- Check the `VILLAIN_NAME_MAPPINGS` in `src/submit-forms.ts`
+- Check the `HERO_NAME_MAPPINGS` in `src/constants.ts`
+- Check the `VILLAIN_NAME_MAPPINGS` in `src/constants.ts`
 - Add your variation to the appropriate mapping object
 
 ## Development
@@ -317,13 +317,13 @@ This project uses [Bun](https://bun.sh) for several advantages:
 
 ```bash
 # Parallel with 8 workers (default)
-bun src/submit-forms.ts path/to/data.json
+bun src/index.ts path/to/data.json
 
 # Sequential mode
-bun src/submit-forms.ts path/to/data.json 2025-06-01 --sequential
+bun src/index.ts path/to/data.json 2025-06-01 --sequential
 
 # Custom worker count
-bun src/submit-forms.ts path/to/data.json 2025-06-01 --workers 4
+bun src/index.ts path/to/data.json 2025-06-01 --workers 4
 ```
 
 ### Available Bun Scripts
@@ -342,8 +342,11 @@ bun run install:browsers   # Install Playwright browsers
 No build step needed! Bun runs TypeScript directly:
 
 ```bash
-# Edit src/submit-forms.ts, then run immediately
-bun src/submit-forms.ts your_data.json
+# Edit any source file, then run immediately
+bun src/index.ts your_data.json
+
+# Or use the start script
+bun start your_data.json
 ```
 
 ## Project Structure
@@ -351,15 +354,29 @@ bun src/submit-forms.ts your_data.json
 ```
 marvel-form-automation/
 ├── src/
-│   └── submit-forms.ts    # Main automation script
-├── dist/                  # Compiled JavaScript (generated)
-├── sample_play_data.json  # Example data for testing
-├── package.json           # NPM configuration
-├── package-lock.json      # Locked dependency versions
-├── tsconfig.json          # TypeScript configuration
-├── .gitignore            # Git ignore rules
-└── README.md             # This file
+│   ├── index.ts              # Main entry point
+│   ├── types.ts              # TypeScript type definitions
+│   ├── constants.ts          # Constants and mappings
+│   ├── utils.ts              # Utility functions
+│   ├── form-submitter.ts     # FormSubmitter class (core logic)
+│   └── parallel-processor.ts # Parallel/sequential orchestration
+├── sample_play_data.json     # Example data for testing
+├── package.json              # Bun configuration
+├── bun.lock                  # Locked dependency versions
+├── tsconfig.json             # TypeScript configuration
+├── .gitignore                # Git ignore rules
+├── CHANGELOG.md              # Version history
+└── README.md                 # This file
 ```
+
+### Module Responsibilities
+
+- **index.ts**: Command-line argument parsing and main entry point
+- **types.ts**: TypeScript interfaces (PlayData, HeroPlay, ProcessingResult, etc.)
+- **constants.ts**: Form URL, timeouts, hero/villain name mappings, special scenarios
+- **utils.ts**: Helper functions (chunkArray, parseDifficulty, mapSpiderWomanAspects)
+- **form-submitter.ts**: FormSubmitter class with all form interaction logic
+- **parallel-processor.ts**: Filtering logic and parallel/sequential processing orchestration
 
 ## Data Source Integration
 
